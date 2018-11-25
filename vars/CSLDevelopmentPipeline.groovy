@@ -1,13 +1,11 @@
 def call(body) {
     // evaluate the body block, and collect configuration into the object
-    def config = [:]
+    def pipelineParams = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
-    body.delegate = config
+    body.delegate = pipelineParams
     body()
 
-
-
-
+    // Define the pipeline to be executed
     pipeline {
 
         // Only run the pipeline on nodes with the 'docker' label
@@ -26,7 +24,7 @@ def call(body) {
         }
 
         stages {
-            stage('checkout scm') {
+            stage('checkout') {
                 steps {
 //                    git branch: pipelineParams.branch, credentialsId: 'GitCredentials', url: pipelineParams.scmUrl
                     checkout scm
@@ -51,46 +49,94 @@ def call(body) {
                             env.CSL_STACK_NAME = "${env.BUILD_USER_ID}"
                         }
                     }
-
-                    sh 'printenv'
-
                 }
             }
 
             stage('build') {
                 steps {
-//                    sh 'mvn clean package -DskipTests=true'
-                    sh 'echo "Hi Jon this is the test shared library build step"'
+                    build = ".build-" + System.currentTimeMillis()
+                    println "Build to tag image with = " + build
+                    imageName = registryNameSpace + appName + ":" + version + build
+                    app = docker.build(imageName)
                 }
             }
-/*
+
+            stage ('publish') {
+                steps {
+                    withAWS(region:'us-west-1', credentials:'AWS_DOCKER_REPO') {
+
+                        // Get the Docker login command to execute.
+                        def login = ecrLogin()
+
+                        // Login to the AWS account that will push the images
+                        sh login
+
+                        docker.withRegistry(registry) {
+
+                            // Push the current version as the lastest version
+                            app.push('latest')
+
+                            // Push the current version and reset the version as the previous line changed it
+                            app.push(version + build)
+                        }
+                    }
+                }
+            }
+
             stage ('test') {
                 steps {
-                    parallel (
-                        "unit tests": { sh 'mvn test' },
-                        "integration tests": { sh 'mvn integration-test' }
-                    )
+                    script { 
+                        try {
+                            // Remove any chance that the container could be left from previous attempts to test
+                            try {sh 'docker stop ' + appName} catch (ex) {/* ignore */}
+                            try {sh 'docker rm ' + appName} catch (ex) {/* ignore */}
+
+                            // Run the container to ensure it works
+                            container = app.run('--name ' + appName)
+
+                            /************************************************************************************
+                            Call the specific testing mechanism defined by the repo being built
+                            ************************************************************************************/
+                            cslTest()
+
+                            // Get the logs of the container to show in the jenkins log as this will contain the text to prove that
+                            // the build job was successful
+                            sh 'docker logs ' + appName
+                        }
+                        finally {
+                            try { container.stop } catch (ex) { /* ignore */ }
+                        }
+                    }
                 }
             }
 
-            stage('deploy developmentServer'){
+            stage('deploy to development server'){
                 steps {
-                    deploy(pipelineParams.developmentServer, pipelineParams.serverPort)
-                }
-            }
+//                    deploy(pipelineParams.developmentServer, pipelineParams.serverPort)
 
-            stage('deploy staging'){
-                steps {
-                    deploy(pipelineParams.stagingServer, pipelineParams.serverPort)
-                }
-            }
 
-            stage('deploy production'){
-                steps {
-                    deploy(pipelineParams.productionServer, pipelineParams.serverPort)
+                    /*  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        The docker command to deploy the stack is executed on the hosts docker daemon. When using AWS registry the AWS command
+                        also needs to be executed on the host and hence to deploy the static we use ssh to execute the commands
+                    */
+                    def sshCommand = '(aws ecr get-login --no-include-email --region us-west-1) | source /dev/stdin && ' +
+                        'docker stack deploy --compose-file ./compose-files/' + composeFilename + " " + stackName
+
+                    // Deploy the stack in the existing swarm
+                    /*
+                    sshPublisher(publishers: [sshPublisherDesc(configName: 'Development', 
+                        transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: sshCommand, execTimeout: 120000, 
+                        flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', 
+                        remoteDirectory: '', remoteDirectorySDF: false, removePrefix: '', sourceFiles: '')], 
+                        usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
+                    */
+                    sshPublisher(publishers: [sshPublisherDesc(configName: 'Development', 
+                        transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: sshCommand, execTimeout: 120000, 
+                        flatten: false, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[, ]+', 
+                        remoteDirectory: 'compose-files', remoteDirectorySDF: false, removePrefix: '', sourceFiles: composeFilename)], 
+                        usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
                 }
             }
-*/
         }
         post {
             failure {
@@ -99,3 +145,5 @@ def call(body) {
         }
     }
 }
+
+
