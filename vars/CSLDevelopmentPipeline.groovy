@@ -132,29 +132,31 @@ def call(body) {
 
             stage('deploy to development server'){
                 steps {
+                    script {
 //                    deploy(pipelineParams.developmentServer, pipelineParams.serverPort)
 
 
-                    /*  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                        The docker command to deploy the stack is executed on the hosts docker daemon. When using AWS registry the AWS command
-                        also needs to be executed on the host and hence to deploy the static we use ssh to execute the commands
-                    */
-                    def sshCommand = '(aws ecr get-login --no-include-email --region us-west-1) | source /dev/stdin && ' +
-                        'docker stack deploy --compose-file ./compose-files/' + composeFilename + " " + stackName
+                        /*  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                            The docker command to deploy the stack is executed on the hosts docker daemon. When using AWS registry the AWS command
+                            also needs to be executed on the host and hence to deploy the static we use ssh to execute the commands
+                        */
+                        def sshCommand = '(aws ecr get-login --no-include-email --region us-west-1) | source /dev/stdin && ' +
+                            'docker stack deploy --compose-file ./compose-files/' + composeFilename + " " + stackName
 
-                    // Deploy the stack in the existing swarm
-                    /*
-                    sshPublisher(publishers: [sshPublisherDesc(configName: 'Development', 
-                        transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: sshCommand, execTimeout: 120000, 
-                        flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', 
-                        remoteDirectory: '', remoteDirectorySDF: false, removePrefix: '', sourceFiles: '')], 
-                        usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
-                    */
-                    sshPublisher(publishers: [sshPublisherDesc(configName: 'Development', 
-                        transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: sshCommand, execTimeout: 120000, 
-                        flatten: false, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[, ]+', 
-                        remoteDirectory: 'compose-files', remoteDirectorySDF: false, removePrefix: '', sourceFiles: composeFilename)], 
-                        usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
+                        // Deploy the stack in the existing swarm
+                        /*
+                        sshPublisher(publishers: [sshPublisherDesc(configName: 'Development', 
+                            transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: sshCommand, execTimeout: 120000, 
+                            flatten: false, makeEmptyDirs: false, noDefaultExcludes: false, patternSeparator: '[, ]+', 
+                            remoteDirectory: '', remoteDirectorySDF: false, removePrefix: '', sourceFiles: '')], 
+                            usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
+                        */
+                        sshPublisher(publishers: [sshPublisherDesc(configName: 'Development', 
+                            transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: sshCommand, execTimeout: 120000, 
+                            flatten: false, makeEmptyDirs: true, noDefaultExcludes: false, patternSeparator: '[, ]+', 
+                            remoteDirectory: 'compose-files', remoteDirectorySDF: false, removePrefix: '', sourceFiles: composeFilename)], 
+                            usePromotionTimestamp: false, useWorkspaceInPromotion: false, verbose: false)])
+                    }
                 }
             }
         }
