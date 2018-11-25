@@ -72,28 +72,32 @@ def call(body) {
                     println "Build to tag image with = " + "${env.CSL_BUILD}"
 */
 //                    app = docker.build("${CSL_DOCKER_IMAGE_NAME}")
-                    docker.build("${CSL_DOCKER_IMAGE_NAME}")
-                    println "Build to tag image with = " + "${env.CSL_BUILD}"
+
+                    script { 
+                        env.CSL_APP = docker.build("${CSL_DOCKER_IMAGE_NAME}")
+                    }
                 }
             }
 
             stage ('publish for development') {
                 steps {
                     withAWS(region:'us-west-1', credentials:'AWS_DOCKER_REPO') {
+                        script { 
 
-                        // Get the Docker login command to execute.
-                        def login = ecrLogin()
+                            // Get the Docker login command to execute.
+                            def login = ecrLogin()
 
-                        // Login to the AWS account that will push the images
-                        sh login
+                            // Login to the AWS account that will push the images
+                            sh login
 
-                        docker.withRegistry(registry) {
+                            docker.withRegistry(registry) {
 
-                            // Push the current version as the lastest version
-                            app.push('latest')
+                                // Push the current version as the lastest version
+                                env.CSL_APP.push('latest')
 
-                            // Push the current version and reset the version as the previous line changed it
-                            app.push(version + build)
+                                // Push the current version and reset the version as the previous line changed it
+                                app.push(version + build)
+                            }
                         }
                     }
                 }
