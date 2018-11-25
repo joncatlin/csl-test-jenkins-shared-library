@@ -54,14 +54,12 @@ def call(body) {
 
             stage('build') {
                 steps {
-                    build = ".build-" + System.currentTimeMillis()
-                    println "Build to tag image with = " + build
-                    imageName = registryNameSpace + appName + ":" + version + build
-                    app = docker.build(imageName)
+                    println "Build to tag image with = " + "${env.CSL_BUILD}"
+                    app = docker.build("${env.CSL_REGISTRY}${env.CSL_REPO_NAME}:${env.CSL_VERSION}${env.CSL_BUILD}"
                 }
             }
 
-            stage ('publish') {
+            stage ('publish for development') {
                 steps {
                     withAWS(region:'us-west-1', credentials:'AWS_DOCKER_REPO') {
 
