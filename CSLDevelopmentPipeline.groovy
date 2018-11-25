@@ -6,7 +6,22 @@ def call(body) {
     body()
 
     pipeline {
-        agent any
+
+        // Only run the pipeline on nodes with the 'docker' label
+        agent {
+            node {
+                label 'docker'
+            }
+        }
+
+        // Set up environment variables to be used in the pipeline
+        environment { 
+            CSL_MESSAGE = 'hi jon'
+            CSL_REGISTRY = 'https://index.docker.io/v1/'
+            CSL_COMPOSE_FILENAME = 'csl-test-jenkins-compose.yml'
+            CSL_REGISTRY_CREDENTIALS = credentials('demo-dockerhub-credentials')
+        }
+
         stages {
             stage('checkout scm') {
                 steps {
