@@ -55,7 +55,7 @@ def call(body) {
             stage('build') {
                 steps {
                     println "Build to tag image with = " + "${env.CSL_BUILD}"
-                    app = docker.build("${env.CSL_REGISTRY}${env.CSL_REPO_NAME}:${env.CSL_VERSION}${env.CSL_BUILD}"
+                    app = docker.build("${env.CSL_REGISTRY}${env.CSL_REPO_NAME}:${env.CSL_VERSION}${env.CSL_BUILD}")
                 }
             }
 
