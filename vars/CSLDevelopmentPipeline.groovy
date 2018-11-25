@@ -60,10 +60,10 @@ def call(body) {
 
 
             stage('build') {
+                environment { 
+                    CSL_DOCKER_IMAGE_NAME = "${env.CSL_REGISTRY}${env.CSL_REPO_NAME}:${env.CSL_VERSION}${env.CSL_BUILD}"
+                }
                 steps {
-                    environment { 
-                        CSL_DOCKER_IMAGE_NAME = "${env.CSL_REGISTRY}${env.CSL_REPO_NAME}:${env.CSL_VERSION}${env.CSL_BUILD}"
-                    }
 /*                    
                     agent {
                         dockerfile true
