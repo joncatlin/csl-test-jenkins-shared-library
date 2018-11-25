@@ -52,10 +52,31 @@ def call(body) {
                 }
             }
 
+
+
+
+
+
+
+
+            environment { 
+                CSL_DOCKER_IMAGE_NAME = "${env.CSL_REGISTRY}${env.CSL_REPO_NAME}:${env.CSL_VERSION}${env.CSL_BUILD}"
+            }
+
+
+
             stage('build') {
                 steps {
+/*                    
+                    agent {
+                        dockerfile true
+                        reuseNode true  // Run the container on the same node as everything else
+                    }
                     println "Build to tag image with = " + "${env.CSL_BUILD}"
-                    app = docker.build("${env.CSL_REGISTRY}${env.CSL_REPO_NAME}:${env.CSL_VERSION}${env.CSL_BUILD}")
+*/
+//                    app = docker.build("${CSL_DOCKER_IMAGE_NAME}")
+                    docker.build("${CSL_DOCKER_IMAGE_NAME}")
+                    println "Build to tag image with = " + "${env.CSL_BUILD}"
                 }
             }
 
