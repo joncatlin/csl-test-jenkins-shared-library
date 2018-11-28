@@ -118,7 +118,7 @@ def call(body) {
                             /************************************************************************************
                             Call the specific testing mechanism defined by the repo being built
                             ************************************************************************************/
-                            cslTest(env.CSL_REPO_NAME)
+                            pipelineParams.testMethod(env.CSL_REPO_NAME)
                         }
                         finally {
                             try { container.stop } catch (ex) { /* ignore */ }
