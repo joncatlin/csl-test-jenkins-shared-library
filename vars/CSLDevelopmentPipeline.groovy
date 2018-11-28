@@ -21,6 +21,7 @@ def call(body) {
             CSL_REGISTRY = 'https://index.docker.io/v1/'
             CSL_COMPOSE_FILENAME = 'csl-test-jenkins-compose.yml'
             CSL_REGISTRY_CREDENTIALS = credentials('demo-dockerhub-credentials')
+            AWS_REGISTRY = 'https://289521388027.dkr.ecr.us-west-1.amazonaws.com'
         }
 
         stages {
@@ -61,7 +62,7 @@ def call(body) {
 
             stage('build') {
                 environment { 
-                    CSL_DOCKER_IMAGE_NAME = "${env.CSL_REGISTRY}${env.CSL_REPO_NAME}:${env.CSL_VERSION}${env.CSL_BUILD}"
+                    CSL_DOCKER_IMAGE_NAME = "${env.CSL_REPO_NAME}:${env.CSL_VERSION}${env.CSL_BUILD}"
                 }
                 steps {
 /*                    
@@ -90,13 +91,13 @@ def call(body) {
                             // Login to the AWS account that will push the images
                             sh login
 
-                            docker.withRegistry(registry) {
+                            docker.withRegistry(AWS_REGISTRY) {
 
                                 // Push the current version as the lastest version
                                 env.CSL_APP.push('latest')
 
                                 // Push the current version and reset the version as the previous line changed it
-                                app.push(version + build)
+                                env.CSL_APP.push(version + build)
                             }
                         }
                     }
