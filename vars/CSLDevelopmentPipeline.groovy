@@ -73,10 +73,8 @@ def call(body) {
                     }
                     println "Build to tag image with = " + "${env.CSL_BUILD}"
 */
-//                    app = docker.build("${CSL_DOCKER_IMAGE_NAME}")
-
                     script { 
-                        CSL_CONTAINER = docker.build("${CSL_DOCKER_IMAGE_NAME}")
+                        CSL_CONTAINER = docker.build(cslAWSRegistryPrefix + "${CSL_DOCKER_IMAGE_NAME}")
                     }
                 }
             }
