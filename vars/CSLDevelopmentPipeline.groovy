@@ -96,7 +96,7 @@ def call(body) {
                                 CSL_CONTAINER.push('latest')
 
                                 // Push the current version and reset the version as the previous line changed it
-                                CSL_CONTAINER.push(version + build)
+                                CSL_CONTAINER.push("${env.CSL_VERSION}${env.CSL_BUILD}")
                             }
                         }
                     }
@@ -117,11 +117,7 @@ def call(body) {
                             /************************************************************************************
                             Call the specific testing mechanism defined by the repo being built
                             ************************************************************************************/
-                            cslTest()
-
-                            // Get the logs of the container to show in the jenkins log as this will contain the text to prove that
-                            // the build job was successful
-                            sh 'docker logs ' + appName
+                            cslTest(appName)
                         }
                         finally {
                             try { container.stop } catch (ex) { /* ignore */ }
