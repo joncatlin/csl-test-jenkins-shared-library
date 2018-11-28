@@ -106,18 +106,19 @@ def call(body) {
             stage ('test') {
                 steps {
                     script { 
+                        def container
                         try {
                             // Remove any chance that the container could be left from previous attempts to test
-                            try {sh 'docker stop ' + appName} catch (ex) {/* ignore */}
-                            try {sh 'docker rm ' + appName} catch (ex) {/* ignore */}
+                            try {sh 'docker stop ' + env.CSL_REPO_NAME} catch (ex) {/* ignore */}
+                            try {sh 'docker rm ' + env.CSL_REPO_NAME} catch (ex) {/* ignore */}
 
                             // Run the container to ensure it works
-                            container = app.run('--name ' + appName)
+                            container = CSL_CONTAINER.run('--name ' + env.CSL_REPO_NAME)
 
                             /************************************************************************************
                             Call the specific testing mechanism defined by the repo being built
                             ************************************************************************************/
-                            cslTest(appName)
+                            cslTest(env.CSL_REPO_NAME)
                         }
                         finally {
                             try { container.stop } catch (ex) { /* ignore */ }
@@ -137,7 +138,7 @@ def call(body) {
                             also needs to be executed on the host and hence to deploy the static we use ssh to execute the commands
                         */
                         def sshCommand = '(aws ecr get-login --no-include-email --region us-west-1) | source /dev/stdin && ' +
-                            'docker stack deploy --compose-file ./compose-files/' + composeFilename + " " + stackName
+                            'docker stack deploy --compose-file ./compose-files/' + CSL_COMPOSE_FILENAME + " " + CSL_STACK_NAME
 
                         // Deploy the stack in the existing swarm
                         /*
